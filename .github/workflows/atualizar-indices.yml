@@ -1,0 +1,28 @@
+name: Atualizar índices (BCB)
+
+on:
+  schedule:
+    - cron: "17 11 12 * *"   # dia 12 de cada mês, 08:17 em Cuiabá — após a divulgação do IPCA
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/atualizar-indices.mjs
+      - run: node tests/run_tests.mjs
+      - name: Registrar alteração
+        run: |
+          if git diff --quiet -- data/; then echo "Sem mudanças."; exit 0; fi
+          git config user.name "ceprec-bot"
+          git config user.email "ceprec-bot@users.noreply.github.com"
+          git add data/indices.js data/indices.json
+          git commit -m "Atualiza tabela de índices (BCB/SGS)"
+          git push
